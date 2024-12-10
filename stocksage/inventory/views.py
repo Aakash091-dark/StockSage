@@ -1,52 +1,52 @@
 # inventory/views.py
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, redirect
 from .models import Inventory
 from .forms import InventoryForm
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
-
-# Inventory List
 def inventory_list(request):
-    search_query = request.GET.get("search", "")
-    if search_query:
-        inventory_items = Inventory.objects.filter(name__icontains=search_query)
-    else:
-        inventory_items = Inventory.objects.all()
-    return render(
-        request,
-        "inventory/inventory_list.html",
-        {"inventory_items": inventory_items, "search_query": search_query},
-    )
+    items = Inventory.objects.all()  # Replace with your actual queryset
+    paginator = Paginator(items, 10)  # 10 items per page
 
+    page = request.GET.get('page')
+    try:
+        page_obj = paginator.page(page)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)  # If page is not an integer, show first page
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)  # If page is out of range, show last page
 
-# Add Inventory Item
+    return render(request, 'inventory/inventory_list.html', {'page_obj': page_obj})
+
+# Add Inventory
 def add_inventory(request):
-    if request.method == "POST":
+    if request.method == 'POST':
         form = InventoryForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect("inventory_list")
+            return redirect('inventory_list')
     else:
         form = InventoryForm()
-    return render(request, "inventory/add_inventory.html", {"form": form})
+    return render(request, 'inventory/inventory_form.html', {'form': form})
 
-
-# Edit Inventory Item
+# Edit Inventory
 def edit_inventory(request, pk):
-    item = get_object_or_404(Inventory, pk=pk)
-    if request.method == "POST":
+    item = Inventory.objects.get(pk=pk)
+    if request.method == 'POST':
         form = InventoryForm(request.POST, instance=item)
         if form.is_valid():
             form.save()
-            return redirect("inventory_list")
+            return redirect('inventory_list')
     else:
         form = InventoryForm(instance=item)
-    return render(
-        request, "inventory/edit_inventory.html", {"form": form, "item": item}
-    )
+    return render(request, 'inventory/inventory_form.html', {'form': form})
 
-
-# Delete Inventory Item
+# Delete Inventory
 def delete_inventory(request, pk):
-    item = get_object_or_404(Inventory, pk=pk)
+    item = Inventory.objects.get(pk=pk)
     item.delete()
-    return redirect("inventory_list")
+    return redirect('inventory_list')
+
+
+
+
